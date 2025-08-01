@@ -1,0 +1,138 @@
+ --use datawarehouse;
+ ---bulk insert
+
+   /* if we want to extract a file from source or extract data the 
+   bulk insert will be used */
+
+   /* bulk insert= all rows will be inserted one by one automatiocally
+   insert= we do it ourself manually */
+
+   -- data fetch from csv file for table bronze.crm_cust_info and it'll work same for evry table 
+   -- if any thing miss then 
+   ------>
+   -- truncate the table and the reload the data
+      --its the path where we have those files\(cust_info.csv) ----> the file name we have to load
+   --with = used to tell sql how to handle it 
+   --firstrow =2 becuse in file we have 1 frow with column name and actual data start from 2
+   --fieldterminator means a sepration between column so sql put the correct value of column to every coulmn
+
+   --select count(* ) from bronze.crm_cust_info
+   ===========================================================================================
+   --stored procedure----
+   ================================================================================
+
+   create or alter procedure bronze.load_bronze as
+   begin
+   declare @start_time datetime,@end_time datetime,@batchs_t datetime,@batche_t datetime
+   begin try
+   set @batchs_t=getdate();
+   print '===========================================';
+   print'bronze layers';
+   print'===============================================';
+
+   print'-------------------------------------------';
+   print'source crm';
+   print'--------------------------------';
+   set  @start_time=getdate();
+   truncate table bronze.crm_cust_info;
+   bulk insert bronze.crm_cust_info
+   from 'C:\Users\micro\Downloads\Compressed\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_crm\cust_info.csv'
+   with (
+   firstrow=2,
+   fieldterminator =','
+  -- tablock --it,s just lock the table after loading it
+   ); set @end_time =getdate();
+   print'duration load:'+ cast(datediff(second,@start_time,@end_time) as nvarchar(50)) + 'seconds';
+   print'--------------------------';
+
+
+
+    set  @start_time=getdate();
+   truncate table bronze.crm_prd_info;
+    bulk insert bronze.crm_prd_info
+   from 'C:\Users\micro\Downloads\Compressed\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_crm\prd_info.csv'
+   with (
+   firstrow=2,
+   fieldterminator =','
+  -- tablock --it,s just lock the table after loading it
+   );set @end_time =getdate();
+
+   print'duration load:'+ cast(datediff(second,@start_time,@end_time) as nvarchar(50)) + 'seconds';
+   print'--------------------------';
+  -- select * from  bronze.crm_prd_info;
+
+ set  @start_time=getdate();
+  truncate table bronze.crm_sales_details;
+    bulk insert [bronze].[crm_sales_details]
+   from 'C:\Users\micro\Downloads\Compressed\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_crm\sales_details.csv'
+   with (
+   firstrow=2,
+   fieldterminator =','
+  -- tablock --it,s just lock the table after loading it
+   );set @end_time =getdate();
+
+   print'duration load:'+ cast(datediff(second,@start_time,@end_time) as nvarchar(50)) + 'seconds';
+   print'--------------------------';
+
+  -- select * from [bronze].[crm_sales_details];
+  print'------------------------------------------------';
+  print'source erp';
+  print'-------------------------------------------------';
+  set @start_time=getdate();
+   truncate table bronze.erp_cust_az12;
+
+    bulk insert [bronze].[erp_cust_az12]
+   from 'C:\Users\micro\Downloads\Compressed\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_erp\cust_az12.csv'
+   with (
+   firstrow=2,
+   fieldterminator =','
+  -- tablock --it,s just lock the table after loading it
+   );set @end_time =getdate();
+   print'duration load:'+ cast(datediff(second,@start_time,@end_time) as nvarchar(50)) + 'seconds';
+   print'--------------------------';
+  -- select * from [bronze].[erp_cust_az12];
+  set @start_time=getdate();
+  truncate table bronze.erp_loc_a101;
+    bulk insert [bronze].[erp_loc_a101]
+   from 'C:\Users\micro\Downloads\Compressed\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_erp\loc_A101.csv'
+   with (
+   firstrow=2,
+   fieldterminator =','
+  -- tablock --it,s just lock the table after loading it
+   );set @end_time =getdate();
+   print'duration load:'+ cast(datediff(second,@start_time,@end_time) as nvarchar(50)) + 'seconds';
+   print'--------------------------';
+
+  -- select* from [bronze].[erp_loc_a101];
+ set @start_time=getdate();
+  truncate table bronze.erp_px_cat_g1v2;
+ bulk insert [bronze].[erp_px_cat_g1v2]
+   from 'C:\Users\micro\Downloads\Compressed\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_erp\px_cat_g1v2.csv'
+   with (
+   firstrow=2,
+   fieldterminator =','
+  -- tablock --it,s just lock the table after loading it
+   );
+   set @end_time =getdate();
+   print'duration load:'+ cast(datediff(second,@start_time,@end_time) as nvarchar(50)) + 'seconds';
+   print'--------------------------';
+
+  -- select * from [bronze].[erp_px_cat_g1v2];
+  end try
+  ---- it show these message if we have any error in statment
+        begin catch
+		print'=============================================';
+		print'error occur in layer';
+		print'error message: ' + error_message();
+		print'error number:' + cast(error_number() as nvarchar(50));
+		print'==============================================';
+
+        end catch;
+		set @batche_t=getdate();
+		print'=====================';
+		print'batch load :' + cast(datediff(second,@batchs_t,@batche_t) as nvarchar(50));
+  end;
+
+
+  --execution of store procedure
+  exec bronze.load_bronze;
